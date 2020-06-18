@@ -19,76 +19,41 @@ void setup() {
   Wire.endTransmission(true);        //end the transmission
 }
 
-String Adequar(float eixo){   //Função para deixar todos os valores com o mesmo número de caractéres.
-  String eixo_string;       
-  eixo_string = String(eixo);
+String Adequar(float eixo, int size_char){   //Função para deixar todos os valores com o mesmo número de caractéres.
+  String eixo_string;
   String aux;
-  
-  if(eixo >= 0){
-      if(eixo >= 100){
-          aux += "0";
-          eixo_string = aux + eixo;
-          return eixo_string;
-      }
 
-      if(eixo < 10){
-        aux += "0";       
-        aux += "0";
-        aux += "0";
-        eixo_string = aux + eixo;
-        return eixo_string;
-      }
-    
-      else if(eixo == 10){
-        aux += "0";
-        aux += "0";
-        eixo_string = aux + eixo;
-        return eixo_string;
-       }
-       
-      else{
-        aux += "0";
-        aux += "0";
-        eixo_string = aux + eixo_string;
-        return eixo_string;
-       }  
+  if(size_char < 6){
+    eixo_string = "Valor do eixo muito grande para a quantidade de carácteres!";
+    return eixo_string;
   }
-//--------------------
+ 
+  if(eixo >=0){
+    eixo_string = String(eixo);
+    int aux_char = size_char - (eixo_string.length() - 1);
+    for(int i = 0; i < aux_char; i++){ 
+        aux += "0";
+        eixo_string += aux; 
+      }
+      eixo_string = aux + String(eixo);
+      return eixo_string;
+  }
+  
   else{
-        eixo = abs(eixo);
-        String eixo_string;
-        eixo_string = String(eixo);
-        String aux;
-        
-        if(eixo >= 100){
-           aux += "-";
-           eixo_string = aux + eixo;
-           return eixo_string;
-         }
-    
-        if(eixo < 10){
+    eixo = abs(eixo);
+    eixo_string = String(eixo);
+    int aux_char = size_char - (eixo_string.length() - 1);
+    for(int i = 0; i < aux_char; i++){ 
+        if(i == 0){
           aux += "-";
-          aux += "0";
-          aux += "0";
-          eixo_string = aux + eixo_string;
-          return eixo_string;
-        } 
-        
-        else if(eixo == 10){
-        aux += "-";
+          continue; 
+        }
         aux += "0";
-        aux += "0";
-        eixo_string = aux + eixo;
-        return eixo_string;
-       }
-       
-        else{
-        aux += "-";
-        aux += "0";
-        eixo_string = aux + eixo_string;
-        return eixo_string;
-       }  
-    }  
+        eixo_string += aux; 
+      }
+      eixo_string = aux + String(eixo);
+      return eixo_string;  
+   }
 }
 
 CircularBuffer<String, 48>buffer;
@@ -137,13 +102,13 @@ void loop() {
         roll = 0.96 * gyroAngleX + 0.04 * accAngleX;
         pitch = 0.96 * gyroAngleY + 0.04 * accAngleY;
         //----------------------------  
-        Serial.print(Adequar(AccX));
-        Serial.print(Adequar(AccY));
-        Serial.print(Adequar(AccZ));
-        Serial.print(Adequar(GyroX));
-        Serial.print(Adequar(GyroY));
-        Serial.print(Adequar(GyroZ));
-        buffer.clear();
+
+        Serial.print(Adequar(AccX, 6));
+        Serial.print(Adequar(AccY, 6));
+        Serial.print(Adequar(AccZ, 6));
+        Serial.print(Adequar(GyroX,6));
+        Serial.print(Adequar(GyroY,6));
+        Serial.print(Adequar(GyroZ,6));
     }
    }
   }
