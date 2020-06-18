@@ -51,7 +51,7 @@ string hora = __TIME__;
 time_t t = std::time(0);   // get time now
 long long int now = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 
-string dir = "C:/Users/thiag/Desktop/NAVEM/VisualStudio/imagens" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now);
+string dir = "C:/Users/thiag/Desktop/NAVEM/VisualStudio/imagens/" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now) + "_" + to_string(now);
 string path = dir + "/";
 
 
