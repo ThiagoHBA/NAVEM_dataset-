@@ -76,15 +76,16 @@ void* chamadaCamera(int z) {
 	const int quantidadeFrames = 100;
 	double tempos[quantidadeFrames];
 
-	auto iniFOR = std::chrono::high_resolution_clock::now();
-	for (int j = 0; j < quantidadeFrames; j++)
-	{
-		Mat frame;
+	Mat frame;
+	if(ColetaDeDados)Sleep(10000);
 
+	auto iniFOR = std::chrono::high_resolution_clock::now();
+	for (int j = 0; j < quantidadeFrames; j++){
+		cout << j << endl;
 		auto start = std::chrono::high_resolution_clock::now();
 		limpaBuffer();
-		if (!ColetaDeDados()) break;
-		EscritaArquivoDados(meufile, j);
+		if (!ColetaDeDados(j)) break;
+		if (!EscritaArquivoDados(meufile, j)) break;
 		int aux = cap.read(frame);
 		auto stop = std::chrono::high_resolution_clock::now();
 		
