@@ -66,42 +66,39 @@ void* chamadaCamera(int z) {
 
 	Dados.reserve(800);
 	DadosAntes.reserve(800);
-	frames.reserve(100);
+	const int quantidadeFrames = 100;
+	frames.reserve(quantidadeFrames);
 
 	VideoCapture cap(0);
-
 	//cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
 	//cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
-
-	const int quantidadeFrames = 100;
 	double tempos[quantidadeFrames];
 
-	Mat frame;
-	if(ColetaDeDados)Sleep(10000);
-
+	if (ColetaDeDados)Sleep(10000);
+	VideoWriter video(path + "outcpp.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, Size(640, 480));
 	auto iniFOR = std::chrono::high_resolution_clock::now();
-	for (int j = 0; j < quantidadeFrames; j++){
-		cout << j << endl;
+	for (int j = 0; j < quantidadeFrames; j++) {
+		Mat frame;
+
 		auto start = std::chrono::high_resolution_clock::now();
 		limpaBuffer();
 		if (!ColetaDeDados(j)) break;
-		if (!EscritaArquivoDados(meufile, j)) break;
-		int aux = cap.read(frame);
+		if (!EscritaArquivoDados(meufile, j, quantidadeFrames)) break;
+		double grab_frame = cap.read(frame);
 		auto stop = std::chrono::high_resolution_clock::now();
-		
+
 		double elapsedTimeFrame = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-		tempos[j] = elapsedTimeFrame;
-		
-		if (!aux) {
+		tempos[j] = elapsedTimeFrame;		
+
+		if (!grab_frame) {
 			cout << "deu ruim!";
 			break;
 		}
 
 		frames.push_back(frame);
+		// video.write(frame);
 
-		if (j == 99) {
-			fimCamera = 1;
-		}
+		if (j == 99) fimCamera = 1;
 
 	}
 
@@ -109,7 +106,7 @@ void* chamadaCamera(int z) {
 	double elapsedTimeFOR = std::chrono::duration_cast<std::chrono::microseconds>(fimFOR - iniFOR).count();
 	cout << "Tempo do for em segundos:" << elapsedTimeFOR/1000000 << endl;
 
-	int soma = 0;
+	double soma = 0;
 	for (int i = 0; i < quantidadeFrames; i++) {
 		soma += tempos[i];
 	}
@@ -117,25 +114,26 @@ void* chamadaCamera(int z) {
 	cout << "Tempo medio coleta dados em micro: " << soma / quantidadeFrames << endl;
 
 	printf("Gravando...\n");
-	meufile.close();
-
-	for (int i = 0; i < frames.size(); i++) {
+	
+	for (int i = 0; i < frames.size(); i++){
 		if (i < 10) {
-			imwrite(path + '0' + to_string(i) + ".jpg", frames[i]);
+			imwrite(path + '0' + to_string(i) + ".jpg", frames.at(i));
 		}
 		else {
-			imwrite(path + to_string(i) + ".jpg", frames[i]);
+			imwrite(path + to_string(i) + ".jpg", frames.at(i));
 		}
-
 	}
+
 	for (int i = 0; i < Dados.size(); i++) {
 		cout << Dados[i] << endl;
-
 	}
 
 	printf("Finalizou thread camera\n");
 	flagCam = 1;
+
+	meufile.close();
 	return NULL;
+
 }
 
 int main(){

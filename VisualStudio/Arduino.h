@@ -20,7 +20,7 @@ char* port = commport;
 char write_array_success[1] = { 's' };
 char write_array_fail[1] = {'f'};
 char write_array_end[1] = { 'e' };
-int quantidadeDados = 100;
+// int quantidadeDados = 1000;
 
 SerialPort arduino(port);
 
@@ -59,7 +59,7 @@ int VerificaçãoDosDados(char* output) {
 	return 1;
 }
 
-int EscritaArquivoDados(ofstream &myfile, int i) {
+int EscritaArquivoDados(ofstream &myfile, int i, int quantidadeDados) {
 
 	if (i == 0) {
 		myfile << "{";
@@ -99,17 +99,20 @@ int EscritaArquivoDados(ofstream &myfile, int i) {
 		myfile << "\"GyrZ\":" + string("\"") + output[45 + ((size_char)*j)] + output[46 + ((size_char)*j)] + output[47 + ((size_char)*j)] + output[48 + ((size_char)*j)] + output[49 + ((size_char)*j)]
 		+ output[50 + ((size_char)*j)] + output[51 + ((size_char)*j)] + output[52 + ((size_char)*j)] + output[53 + ((size_char)*j)] + string("\"") +  "," + "\n";
 
-		myfile << "\"q0\":" + string("\"") + output[54 + ((size_char)*j)] + output[55 + ((size_char)*j)] + output[56 + ((size_char)*j)] + output[57 + ((size_char)*j)] + output[58 + ((size_char)*j)]
+		myfile << "\"MagX\":" + string("\"") + output[54 + ((size_char)*j)] + output[55 + ((size_char)*j)] + output[56 + ((size_char)*j)] + output[57 + ((size_char)*j)] + output[58 + ((size_char)*j)]
 		+ output[59 + ((size_char)*j)] + output[60 + ((size_char)*j)] + output[61 + ((size_char)*j)] + output[62 + ((size_char)*j)] +  string("\"") + "," + "\n";
 
-		myfile << "\"q1\":" + string("\"") + output[63 + ((size_char)*j)] + output[64 + ((size_char)*j)] + output[65 + ((size_char)*j)] + output[66 + ((size_char)*j)] + output[67 + ((size_char)*j)]
+		myfile << "\"MagY\":" + string("\"") + output[63 + ((size_char)*j)] + output[64 + ((size_char)*j)] + output[65 + ((size_char)*j)] + output[66 + ((size_char)*j)] + output[67 + ((size_char)*j)]
 		+ output[68 + ((size_char)*j)] + output[69 + ((size_char)*j)] + output[70 + ((size_char)*j)] + output[71 + ((size_char)*j)] + string("\"") + "," + "\n";
 
-		myfile << "\"q2\":" + string("\"") + output[72 + ((size_char)*j)] + output[73 + ((size_char)*j)] + output[74 + ((size_char)*j)] + output[75 + ((size_char)*j)] + output[76 + ((size_char)*j)]
+		myfile << "\"MagZ\":" + string("\"") + output[72 + ((size_char)*j)] + output[73 + ((size_char)*j)] + output[74 + ((size_char)*j)] + output[75 + ((size_char)*j)] + output[76 + ((size_char)*j)]
 		+ output[77 + ((size_char)*j)] + output[78 + ((size_char)*j)] + output[79 + ((size_char)*j)] + output[80 + ((size_char)*j)] +  string("\"") + "," + "\n";
 
-		myfile << "\"q3\":" + string("\"") + output[81 + ((size_char)*j)] + output[82 + ((size_char)*j)] + output[83 + ((size_char)*j)] + output[84 + ((size_char)*j)] + output[85 + ((size_char)*j)]
-		+ output[86 + ((size_char)*j)] + output[87 + ((size_char)*j)] + output[88 + ((size_char)*j)] + output[89 + ((size_char)*j)] +  string("\"")  + "\n";
+		myfile << "\"deltat\":" + string("\"") + output[81 + ((size_char)*j)] + output[82 + ((size_char)*j)] + output[83 + ((size_char)*j)] + output[84 + ((size_char)*j)] + output[85 + ((size_char)*j)]
+		+ output[86 + ((size_char)*j)] + output[87 + ((size_char)*j)] + output[88 + ((size_char)*j)] + output[89 + ((size_char)*j)] +  string("\"") +  "," + "\n";
+		
+		long long int time_since_epoch = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+		myfile << "\"time_usec\":" + string("\"") + to_string(time_since_epoch) + string("\"") + '\n';
 
 		if (i == quantidadeDados - 1 && j == samples - 1) fim = true;
 		if (i <= quantidadeDados - 1 && fim == false) myfile << "},\n";
