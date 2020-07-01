@@ -1,7 +1,10 @@
 #include "MPU9250.h"
+#include <SoftwareSerial.h>
 
 // an MPU9250 object with the MPU-9250 sensor on I2C bus 0 with address 0x68
 MPU9250 IMU(Wire,0x68);
+SoftwareSerial mySerial(6, 5); // RX, TX  
+
 int status;
 float ax;
 float ay;
@@ -25,13 +28,14 @@ float beta = sqrt(3.0f / 4.0f) * GyroMeasError;
 float deltat = 0.0f, sum = 0.0f;
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;
+uint32_t Update = 9300; //mean value of times in calcule of quaternions
 
 void setup() {
   // serial to display data
   Serial.begin(115200);
+  mySerial.begin(38400);  
   pinMode(success_led, OUTPUT);
   pinMode(fail_led, OUTPUT);
-  
   while(!Serial) {}
 
   // start communication with IMU 
@@ -47,19 +51,21 @@ void setup() {
 
 void loop() {
   // read the sensor
-  if(Serial.available() > 0){
+  if (Serial.available()){ 
     Serial.flush();
-    delay(20);
+    delay(15);
+    //float ini = millis();
     if(Serial.read() == 'f'){
       digitalWrite(fail_led, HIGH);
       delay(5000); 
       digitalWrite(fail_led, LOW);
     }
-    else{
+    else{  
       digitalWrite(success_led,HIGH);
-      for(int i = 0;i<8; i++){
-        IMU.readSensor();
-        
+      uint32_t iniFor = micros();   
+      for(int i = 0;i<8; i++){   
+        delay(2);
+        IMU.readSensor(); 
         ax = IMU.getAccelX_mss();
         ay = IMU.getAccelY_mss();
         az = IMU.getAccelZ_mss();
@@ -71,25 +77,27 @@ void loop() {
         mx = IMU.getMagX_uT();
         my = IMU.getMagY_uT();
         mz = IMU.getMagZ_uT();
-        az = az + 2.8; //correct gravity error
+        az = az + 2.8; //Correção do erro da gravidade
   
-        Now = micros();
-        deltat = ((Now - lastUpdate) / 1000000.0f);
-        lastUpdate = Now;
-        MadgwickQuaternionUpdate(ax,ay,az,gx,gy,gz,mx,my,mz);
+        //MadgwickQuaternionUpdate(ax,ay,az,gx,gy,gz,mx,my,mz);
         digitalWrite(success_led, LOW);
- 
+        uint32_t MiddleFor = micros();
+        Now = MiddleFor - iniFor;
+        i == 0? deltat = Update/1000000.0 :deltat = ((Now - lastUpdate)/ 1000000.0);  
+        Update = Now - lastUpdate;
+        lastUpdate = Now;  
+      
         //Send data to serial port
-        Serial.print(Adequar(ax, 6));
-        Serial.print(Adequar(ay, 6));
-        Serial.print(Adequar(az, 6));
-        Serial.print(Adequar(gx, 6));
-        Serial.print(Adequar(gy, 6));
-        Serial.print(Adequar(gz, 6));
-        Serial.print(Adequar(q[0], 6));
-        Serial.print(Adequar(q[1], 6));
-        Serial.print(Adequar(q[2], 6));
-        Serial.print(Adequar(q[3], 6));
+        Serial.print(Adequar(ax, 8));
+        Serial.print(Adequar(ay, 8));
+        Serial.print(Adequar(az, 8));
+        Serial.print(Adequar(gx, 8));
+        Serial.print(Adequar(gy, 8));
+        Serial.print(Adequar(gz, 8));
+        Serial.print(Adequar(mx,8));
+        Serial.print(Adequar(my,8));
+        Serial.print(Adequar(mz,8));
+        Serial.print(Adequar(deltat,8));
       }
     }
   } 
@@ -97,30 +105,34 @@ void loop() {
 } 
 
 
-String Adequar(float eixo, int size_char){//function to get all values with the same size of characteres
-  String eixo_string = String(eixo,4);
+String Adequar(float eixo, int size_char){//Função para deixar todos os valores com o mesmo número de caractéres.  
   String adicionais;
-
+  String Decimais = String(abs(eixo),4);
+  if(eixo == 0.0)Decimais = String(0.00,4);
+  String eixo_string = "";
+  
   if(size_char < 6){
     eixo_string = "Valor do eixo muito grande para a quantidade de carácteres!";
     return eixo_string;
   }
  
   if(eixo >=0){
-    eixo_string = String(eixo);
-    int adicionais_char = size_char - (eixo_string.length() - 1);
+    if(eixo >= 1000)eixo = 999.99;  
+    
+    int adicionais_char = size_char - (Decimais.length() - 1);
+    
     for(int i = 0; i < adicionais_char; i++){ 
         adicionais += "0";
         eixo_string += adicionais; 
       }
-      eixo_string = adicionais + String(eixo,4);
+      eixo_string = String(adicionais + Decimais);
       return eixo_string;
   }
   
   else{
     eixo = abs(eixo);
-    eixo_string = String(eixo);
-    int adicionais_char = size_char - (eixo_string.length() - 1);
+    if(eixo >= 1000)eixo = 999.99;  
+    int adicionais_char = size_char - (Decimais.length() - 1);
     for(int i = 0; i < adicionais_char; i++){ 
         if(i == 0){
           adicionais += "-";
@@ -129,7 +141,7 @@ String Adequar(float eixo, int size_char){//function to get all values with the 
         adicionais += "0";
         eixo_string += adicionais; 
       }
-      eixo_string = adicionais + String(eixo,4);
+      eixo_string = String(adicionais + Decimais);
       return eixo_string;
    }
 }
