@@ -18,51 +18,49 @@ float mx;
 float my;
 float mz;
 
-int success_led = 10;
-int fail_led = 12;
+int success_led = 10; //leds used to confirm if pc get the data.
+int fail_led = 12;   // if yes, her blink green, if data are corrupted, her blink red.
 
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 
-float GyroMeasError = PI * (40.0f / 180.0f);
+//used to calculate the quaternions:
+float GyroMeasError = PI * (40.0f / 180.0f); 
 float beta = sqrt(3.0f / 4.0f) * GyroMeasError;
 float deltat = 0.0f, sum = 0.0f;
+
 uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration interval
 uint32_t Now = 0;
 uint32_t Update = 9300; //mean value of times in calcule of quaternions
 
 void setup() {
-  // serial to display data
   Serial.begin(115200);
   mySerial.begin(38400);  
   pinMode(success_led, OUTPUT);
   pinMode(fail_led, OUTPUT);
-  while(!Serial) {}
-
-  // start communication with IMU 
+  
   status = IMU.begin();
-
-
+/*
   float axB = IMU.getAccelBiasX_mss();
   float ayB = IMU.getAccelBiasY_mss();
   float azB = IMU.getAccelBiasZ_mss();
 
-  IMU.calibrateAccel();
+  IMU.calibrateAccel();*/
 }
 
 void loop() {
-  // read the sensor
   if (Serial.available()){ 
     Serial.flush();
     delay(15);
-    //float ini = millis();
+
     if(Serial.read() == 'f'){
       digitalWrite(fail_led, HIGH);
       delay(5000); 
       digitalWrite(fail_led, LOW);
     }
+    
     else{  
       digitalWrite(success_led,HIGH);
-      uint32_t iniFor = micros();   
+      uint32_t iniFor = micros();   // começo a capturar o tempo que a amostra foi pegue.
       for(int i = 0;i<8; i++){   
         delay(2);
         IMU.readSensor(); 
@@ -77,16 +75,30 @@ void loop() {
         mx = IMU.getMagX_uT();
         my = IMU.getMagY_uT();
         mz = IMU.getMagZ_uT();
-        az = az + 2.8; //Correção do erro da gravidade
+        
+        ax = ax + -0.27;
+        ay = ay + 0.14;
+        az = az + 2.79;  //manual gravity correction.
   
         //MadgwickQuaternionUpdate(ax,ay,az,gx,gy,gz,mx,my,mz);
+        
         digitalWrite(success_led, LOW);
-        uint32_t MiddleFor = micros();
-        Now = MiddleFor - iniFor;
-        i == 0? deltat = Update/1000000.0 :deltat = ((Now - lastUpdate)/ 1000000.0);  
+        uint32_t MiddleFor = micros(); 
+        Now = MiddleFor - iniFor; //subtraio para saber quanto tempo durou para obter as amostras.
+        i == 0? deltat = Update/1000000.0 : deltat = (Now - lastUpdate)/ 1000000.0; 
         Update = Now - lastUpdate;
-        lastUpdate = Now;  
-      
+        lastUpdate = Now;
+        /*
+        de forma que a função micros() retorna 
+        o tempo em microssegundos desde o inicio 
+        do código, toda primeira amostra antes de 
+        de entrar no loop vem com valores maiores.
+
+        Para solucionar isso eu pego sempre o valor 
+        passado da variável "Update" e o uso como pri-
+        meiro valor.
+        */
+        
         //Send data to serial port
         Serial.print(Adequar(ax, 8));
         Serial.print(Adequar(ay, 8));
@@ -105,16 +117,11 @@ void loop() {
 } 
 
 
-String Adequar(float eixo, int size_char){//Função para deixar todos os valores com o mesmo número de caractéres.  
+String Adequar(float eixo, int size_char){ //Function to obtain all axis values with the same size of characteres.  
   String adicionais;
   String Decimais = String(abs(eixo),4);
   if(eixo == 0.0)Decimais = String(0.00,4);
   String eixo_string = "";
-  
-  if(size_char < 6){
-    eixo_string = "Valor do eixo muito grande para a quantidade de carácteres!";
-    return eixo_string;
-  }
  
   if(eixo >=0){
     if(eixo >= 1000)eixo = 999.99;  
@@ -146,6 +153,7 @@ String Adequar(float eixo, int size_char){//Função para deixar todos os valore
    }
 }
 
+//quaternions calculation
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
   float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability

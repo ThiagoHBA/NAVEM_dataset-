@@ -20,6 +20,7 @@ char* port = commport;
 char write_array_success[1] = { 's' };
 char write_array_fail[1] = {'f'};
 char write_array_end[1] = { 'e' };
+char led[1] = { '1' };
 // int quantidadeDados = 1000;
 
 SerialPort arduino(port);
@@ -66,7 +67,7 @@ int EscritaArquivoDados(ofstream &myfile, int i, int quantidadeDados) {
 		myfile << "\"Dados\"";
 		myfile << ": [\n";
 	}
-
+	
 	if (!VerificaçãoDosDados(output)) {
 		char* charArray = write_array_fail;
 		arduino.writeSerialPort(charArray, 1);
@@ -76,8 +77,8 @@ int EscritaArquivoDados(ofstream &myfile, int i, int quantidadeDados) {
 	int samples = 8;
 	int size_char = 9*10;
 	bool fim = false;
-
 	for (int j = 0; j < samples; j++) {
+
 		myfile << "{";
 		myfile << "\"i\":" + to_string(i) + "," + '\n';
 
@@ -133,6 +134,7 @@ int ColetaDeDados(int i) {
 	arduino.writeSerialPort(charArray, 1);
 	Sleep(120);
 	arduino.readSerialPort(output, MAX_DATA_LENGTH);
+
 
 	return 1;
 }
