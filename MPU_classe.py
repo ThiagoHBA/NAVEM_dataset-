@@ -184,9 +184,9 @@ class Dados:
 
     def gravity_compensate(q, acc):
       g = [0.0, 0.0, 0.0]
-          
-      g[0] = 2 * (q[1] * q[3] + q[0] * q[2])
-      g[1] = 2 * (q[2] * q[3] - q[0] * q[1])
+      
+      g[0] = 2 * (q[1] * q[3] - q[0] * q[2])
+      g[1] = 2 * (q[0] * q[1] + q[2] * q[3])
       g[2] = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]
       
       return [acc[0] - g[0], acc[1] - g[1], acc[2] - g[2]]
@@ -206,15 +206,14 @@ class Dados:
         L = lambda num, xi: Dados.product((num - xj) / (xi - xj) for xj in x if xj != xi)
         return lambda num: sum([yi * L(num, xi) for xi, yi in zip(x, fx)])
         
-    def integration_simpson(a, b, x,y , nb_ech):
-        f = Dados.lagrange(x,y)
+    def integration_simpson(a, b, f, nb_ech):
         h = (b-a)/np.double(nb_ech)
         z = np.double(f(a)+f(b))
 
         for i in range(1,nb_ech,2) :
-            z += 4 * f(a+i*h)
+            z += 4 * f(a+(i*h))
         for i in range(2, nb_ech-1, 2):
-            z += 4 * f(a+i*h)
+            z += 2 * f(a+(i*h))
 
         val_int =  z*(h/3)
 ##        val_int *= delta_t
@@ -223,7 +222,7 @@ class Dados:
 
     def obter_velocidade():
         for i in range(int(len(tempos)/8)):
-            velocidades.append(Dados.integration_simpson(tempos[i*8], tempos[((i*8)+8)-1], cleanAccZ[i*8:(i*8)+8],tempos[i*8:(i*8)+8], 8))
+            velocidades.append(Dados.integration_simpson(tempos[i*8], tempos[((i*8)+8)-1],Dados.lagrange(tempos[i*8:((i*8)+8)-1],AccZ[i*8:((i*8)+8)-1]),8))
 
             
     
@@ -253,6 +252,9 @@ tempos = tempos/100000
 Dados.obter_quaternions()
 Dados.obter_cleanAccel()
 Dados.obter_velocidade()
+
+plt.plot(velocidades)
+plt.show()
 
 
 
