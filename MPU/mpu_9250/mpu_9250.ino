@@ -18,8 +18,9 @@ float mx;
 float my;
 float mz;
 
-int success_led = 10; //leds used to confirm if pc get the data.
-int fail_led = 12;   // if yes, her blink green, if data are corrupted, her blink red.
+//leds used to confirm if pc get the data.
+int success_led = 10; 
+int fail_led = 12;  
 
 float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 
@@ -94,7 +95,7 @@ void loop() {
         do código, toda primeira amostra antes de 
         de entrar no loop vem com valores maiores.
 
-        Para solucionar isso eu pego sempre o valor 
+        Para 'solucionar' isso eu pego sempre o valor 
         passado da variável "Update" e o uso como pri-
         meiro valor.
         */
@@ -117,17 +118,14 @@ void loop() {
 } 
 
 
-String Adequar(float eixo, int size_char){ //Function to obtain all axis values with the same size of characteres.  
+String Adequar(float eixo, int size_char){ // Function to obtain all axis values with the same size of characteres.  
   String adicionais;
   String Decimais = String(abs(eixo),4);
   if(eixo == 0.0)Decimais = String(0.00,4);
   String eixo_string = "";
  
-  if(eixo >=0){
-    if(eixo >= 1000)eixo = 999.99;  
-    
+  if(eixo >= 0){   
     int adicionais_char = size_char - (Decimais.length() - 1);
-    
     for(int i = 0; i < adicionais_char; i++){ 
         adicionais += "0";
         eixo_string += adicionais; 
@@ -138,7 +136,6 @@ String Adequar(float eixo, int size_char){ //Function to obtain all axis values 
   
   else{
     eixo = abs(eixo);
-    if(eixo >= 1000)eixo = 999.99;  
     int adicionais_char = size_char - (Decimais.length() - 1);
     for(int i = 0; i < adicionais_char; i++){ 
         if(i == 0){
