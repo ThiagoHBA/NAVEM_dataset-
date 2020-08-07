@@ -38,10 +38,14 @@ media_acc = 0
 quaternions_count = []
 velocidades = []
 
-pasta = "./desaceleracao/Exp1/"
+pasta = "./caminhada_30/Exp1/"
 arquivo = "sensores.json"
 sense_txt = open(pasta + arquivo,"r")
 sensor = json.load(sense_txt) 
+def calculo_integral():
+    delta_t = time[j] - time[j-1]
+    velocidade_inst = Dados.integration_trapeze(acc[j-1],acc[j],delta_t)
+    velocidades.append(velocidades[j-1] + velocidade_inst)
 
 class Dados:
     def obter_acc():
@@ -107,26 +111,31 @@ class Dados:
         return val_int
 
     def obter_velocidade(acc,time,velocidades):
-        velocidades.append(0)
-        velocidade_inst = 0
         contador = 0
+        desconto = 0
         
         contador_estado = 0
-        limite_superior = 0.2
-        limite_inferior = -0.2
-        limite_estado = 50
+        contador_estado3 = 0.005
+        
+        limite_superior = 0.1
+        limite_inferior = -0.5
+        limite_estado = 30
+        limite_estado3 = 23
+        
     
         ''''''
         estado = 0
+        
+        velocidades.append(0)
+        velocidade_inst = 0
             
         for j in range(1,len(time), 1):
-    
+
             if(estado == 0):
                 velocidades.append(0)
-                
                 if(acc[j] >= limite_superior or acc[j] <= limite_inferior):
                     estado = 1
-            
+                    
             elif(estado == 1):
        
                 delta_t = time[j] - time[j-1]
@@ -150,39 +159,32 @@ class Dados:
                     contador_estado = 0
                     
                 elif(contador_estado >= limite_estado):
-                    estado = 0
+                    estado = 3
 
-
-
+            elif(estado == 3):
                 
-##            if(estado == 0):
-##                if(AccX[j] >= limite or AccX[j] <= -limite):
-##                    estado = 1
-##                    delta_t = tempos[j] - tempos[j-1]
-##                    velocidade_inst = Dados.integration_trapeze(AccX[j-1],AccX[j],delta_t)
-##                    velocidades.append(velocidades[j-1] + velocidade_inst)
-##                    
-##                else:               
-##                    velocidades.append(0)
-##                    
-##            else:
-##                if(contador_estado == 15):
-##                    estado = 0
-##                    velocidades.append(0)
-##                    continue
-##                    
-##                if(AccX[j] <= limite and AccX[j] >= -limite and estado == 1):
-##                    delta_t = tempos[j] - tempos[j-1]
-##                    velocidade_inst = Dados.integration_trapeze(AccX[j-1],AccX[j],delta_t)
-##                    velocidades.append(velocidades[j-1] + velocidade_inst)
-##                    contador_estado = 0 
-##                    
-##                else:
-##                    delta_t = tempos[j] - tempos[j-1]
-##                    velocidade_inst = Dados.integration_trapeze(AccX[j-1],AccX[j],delta_t)
-##                    velocidades.append(velocidades[j-1] + velocidade_inst)
-##                    contador_estado += 1
+                if(contador_estado3 >= limite_estado3):
+                    delta_t = time[j] - time[j-1]
+                    velocidade_inst = Dados.integration_trapeze(acc[j-1],acc[j],delta_t)
+                    velocidades.append(velocidades[j-1] + velocidade_inst)
+                    
+                    estado = 0
+                    
+                elif(acc[j] <= limite_superior and acc[j] >= limite_inferior):
+                    delta_t = time[j] - time[j-1]
+                    velocidade_inst = Dados.integration_trapeze(acc[j-1],acc[j],delta_t)
+                    velocidades.append((velocidades[j-1] + velocidade_inst) - desconto)
 
+                    desconto += 0.005
+                    contador_estado3 += 1
+                    
+                elif(acc[j] >= limite_superior or acc[j] <= limite_inferior):
+                    delta_t = time[j] - time[j-1]
+                    velocidade_inst = Dados.integration_trapeze(acc[j-1],acc[j],delta_t)
+                    velocidades.append(velocidades[j-1] + velocidade_inst)
+                    
+                    estado = 1
+                    contador_estado = 0
 
 #----------------------------------------------------------------------------------------------------------------
 
@@ -210,14 +212,6 @@ roll = np.array(roll).astype(float)
 pitch = np.array(pitch).astype(float)
 yaw  = np.array(yaw).astype(float)
 
-##roll = roll*(180/pi)
-##pitch = pitch*(180/pi)
-##yaw = yaw*(180/pi)
-##
-##AccX = (AccX/sensibilidade)*gravityForce
-##AccY = (AccY/sensibilidade)*gravityForce
-##AccZ = (AccZ/sensibilidade)*gravityForce
-
 tempos = np.array(tempos).astype(float)
 
 tempos = tempos[1:]
@@ -225,13 +219,11 @@ AccX = AccX[1:]
 AccY = AccY[1:]
 AccZ = AccZ[1:]
 yaw = yaw[1:]
-##tempos = tempos/1000
-##tempos = tempos - tempos[0]
 
 
 intervalo_ini = 0
-intervalo_fim = 30
-Dados.obter_velocidade(AccX[intervalo_ini:intervalo_fim],tempos[intervalo_ini:intervalo_fim],velocidades)
+intervalo_fim = 100
+Dados.obter_velocidade(AccX,tempos,velocidades)
 
 ##plt.plot(AccX)
 ##print(velocidades)
@@ -247,18 +239,12 @@ print("Velocidade média: ",np.mean(velocidades))
 ##plt.plot(tempos,velocidades)
 
 fig, axs = plt.subplots(2)
-axs[0].plot(tempos[intervalo_ini:intervalo_fim],AccX[intervalo_ini:intervalo_fim], marker = "o")
+axs[0].plot(tempos,AccX, marker = "o")
 axs[0].set_title('AccX')
 ##axs[1].plot(tempos,yaw, marker = "o")
 ##axs[1].set_title('Yaw')
-axs[1].plot(tempos[intervalo_ini:intervalo_fim],velocidades, marker = "o")
+axs[1].plot(tempos,velocidades, marker = "o")
 axs[1].set_title('Velocidade X')
-            
-##plt.plot(tempos[55:65],AccX[55:65], color = "red")
-##plt.plot(tempos[10:14], AccX[10:14], color = "black", marker = "o")
-##plt.plot(tempos[28:32],AccX[28:32], color = "black", marker = "o")
-##plt.plot(tempos[43:48],AccX[43:48], color = "black", marker = "o")
-##plt.plot(tempos[60:65],AccX[60:65], color = "black", marker = "o")
 
 plt.show()
 
