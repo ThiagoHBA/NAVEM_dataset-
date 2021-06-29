@@ -7,155 +7,230 @@ import math
 from functools import reduce
 from matplotlib import pyplot as plt
 import scipy.integrate as integrate
+import statistics
+from Imagens import Imagens
+from Sensores import Dados
 
-AccX = []
-AccY = []
-AccZ = []
-AccCount = []
-
-GyroX = []
-GyroY = []
-GyroZ = []
-
-tempos = []
-roll = []
-pitch = []
-yaw = []
-
+acc_linear = False
+vetor_lateral = False
+giro_corpo = False
+acc_linear_Z = False
+eixo_invertidoX = False
+vel = False
+vel_per_frame = False
 gravityForce = 9.80665
-past_vel = []
-media_acc = 0
-quaternions_count = []
-velocidades = []
 
-pasta = "C:/Users/thiag/Desktop/Experimentos/Experimentos_acc_linear/Exp1/"
-arquivo = "sensores.json"
+'''----------------------------------------------------------------------------------------------------------------'''
+
+##imagem = "./camera+captura/NOVOS_EXPS_NEWMPU/"+exp+"/frames.json"
+##pasta = "./camera+captura/NOVOS_EXPS_NEWMPU/"+exp+"/"
+##arquivo = "accelerations.json"
+
+pasta = "./camera+captura/Exps_28.06.2021/Exp2/"
+imagem = pasta + "frames.json"
+arquivo = "accelerations.json"
+
 sense_txt = open(pasta + arquivo,"r")
-sensor = json.load(sense_txt) 
+sensor = json.load(sense_txt)
 
-class Dados:
-    def obter_acc():
-        for Acc in sensor["dados"]:
-            AccX.append(Acc["AccX"])
-            AccY.append(Acc["AccY"])
-            AccZ.append(Acc["AccZ"])
-        for i in range(len(AccX)):
-            AccCount.append(np.array([AccX[i],AccY[i],AccZ[i]]))
-        
-    def obter_gyr():
-        for Gyr in sensor["dados"]:
-            GyroX.append(Gyr["GyrX"])
-            GyroY.append(Gyr["GyrY"])
-            GyroZ.append(Gyr["GyrZ"])
+##acc_linear = True
+vel = True
+##vel_per_frame = True
 
-    def obter_rpy():
-        for rpy in sensor["dados"]:
-            roll.append(rpy["Row"])
-            pitch.append(rpy["Pitch"])
-            yaw.append(rpy["Yaw"])
-        
+'''----------------------------------------------------------------------------------------------------------------'''
 
-    def obter_time():
-        for t in sensor["dados"]:
-            tempos.append(t["time_sec"])
-    
-            
-    def product(lista): 
-        return reduce(lambda acumulado, atual: acumulado * atual, lista)
+Dados.obter_acc(sensor)
+Dados.obter_time(sensor)
+Imagens.abrirCam(imagem)
 
-    def lagrange(x, fx):                                                              
-        L = lambda num, xi: Dados.product((num - xj) / (xi - xj) for xj in x if xj != xi)
-        return lambda num: sum([yi * L(num, xi) for xi, yi in zip(x, fx)])
-        
-    def integration_simpson(a, b, f, nb_ech):
-        h = (b-a)/np.double(nb_ech)
-        z = np.double(f(a)+f(b))
+AccX_MPU = Dados.AccX_MPU
+AccY_MPU = Dados.AccY_MPU
+AccZ_MPU = Dados.AccZ_MPU
+AccCount = Dados.AccCount
+roll_MPU = Dados.roll_MPU
+pitch_MPU = Dados.pitch_MPU
+yaw_MPU = Dados.yaw_MPU
+tempos = Dados.tempos
+diffTempos = Dados.diffTempos
 
-        for i in range(1,nb_ech,2) :
-            z += 4 * f(a+(i*h))
-        for i in range(2, nb_ech-1, 2):
-            z += 2 * f(a+(i*h))
+timeIniArray = Imagens.timeIniArray
+timeFimArray = Imagens.timeFimArray
+timeFimIniArray = Imagens.timeFimIniArray
 
-        val_int =  z*(h/3)
-##        val_int *= delta_t
+timeIniArray = np.array(timeIniArray).astype(float)
+timeFimArray = np.array(timeFimArray).astype(float)
+timeFimIniArray = np.array(timeFimIniArray).astype(float)
 
-        return val_int
+AccX_MPU = np.array(AccX_MPU).astype(float)
+AccY_MPU = np.array(AccY_MPU).astype(float)
+AccZ_MPU = np.array(AccZ_MPU).astype(float)
 
+##AccY_MPU *= -1
 
-    def integration_trapeze(a, b, f, delta_t):
-##        f_a = f(a)
-##        f_b = f(b)
-        f_a = a
-        f_b = b
-        val_int = (f_a+f_b)/2.
-        val_int *= delta_t
+AccX_MPU = (AccX_MPU / 16384) * gravityForce;
+AccY_MPU = (AccY_MPU / 16384) * gravityForce;
+AccZ_MPU = (AccZ_MPU / 16384) * gravityForce;
 
-        return val_int
-
-    def obter_velocidade():
-##        f = Dados.lagrange(tempos[8:16],AccX[8:16])
-##        for i in range(7):
-##            delta_t = tempos[(8+1)+i] - tempos[8+i]
-##            velocidades.append(Dados.integration_trapeze(tempos[(8+1)+i], tempos[8+i], f, delta_t))
-        for j in range(0,len(tempos[306:411]), 1):
-            f = Dados.lagrange(tempos[j:j+2], AccX[j:j+2])
-            delta_t = tempos[306+j+1] - tempos[306+j] #calculo o intervalo de tempo ( altura do trapézio ).
-            velocidades.append(Dados.integration_trapeze(AccX[306+j],AccX[306+j+1], f, delta_t)) #calcula a área de um trapézio e joga no array.
-
-
-'''
-EXP5:
-
-Pico 1: [7:12]
-vale 1: [12:24]
-Pico 2: [24:30]
-vale 2: [30:38]
-Pico 3: [38:46]
-Vale 3: [46:56]
-Pico 4: [56:62]
-Vale 4: [62:72]
-Pico 5: [72:81]
-Vale 5: [81:89]
-Pico 6: [89:98]
-'''
-
-Dados.obter_acc()
-Dados.obter_gyr()
-Dados.obter_rpy()
-Dados.obter_time()
-
-AccX = np.array(AccX).astype(float)
-AccY = np.array(AccY).astype(float)
-AccZ = np.array(AccZ).astype(float)
 AccCount = np.array(AccCount).astype(float)
 
-GyroX = np.array(AccX).astype(float)
-GyroY = np.array(AccY).astype(float)
-GyroZ  = np.array(AccZ).astype(float)
-
-roll = np.array(roll).astype(float)
-pitch = np.array(pitch).astype(float)
-yaw  = np.array(yaw).astype(float)
+roll_MPU = np.array(roll_MPU).astype(float)
+pitch_MPU = np.array(pitch_MPU).astype(float)
+yaw_MPU  = np.array(yaw_MPU).astype(float)
 
 tempos = np.array(tempos).astype(float)
+tempos = tempos - tempos[0]
+tempos = tempos/1000000
+timeFimIniArray = timeFimIniArray/1000000
 
-Dados.obter_velocidade()
-print(velocidades)
-print(sum(velocidades))
-##print("Velocidade média: ",sum(velocidades))
+#=====================================================================
 
-plt.plot(tempos,AccX, marker = "o")
-##plt.plot(tempos,AccY, color = "red")
-##fig, axs = plt.subplots(2)
-##axs[0].plot(tempos,AccX, marker = "o")
-##axs[1].plot(velocidades, marker = "o")
-##plt.plot(tempos[55:65],AccX[55:65], color = "red")
-##plt.plot(tempos[10:14], AccX[10:14], color = "black", marker = "o")
-##plt.plot(tempos[28:32],AccX[28:32], color = "black", marker = "o")
-##plt.plot(tempos[43:48],AccX[43:48], color = "black", marker = "o")
-##plt.plot(tempos[60:65],AccX[60:65], color = "black", marker = "o")
+####Aceleração e velocidade graficos.
+if acc_linear:
+    fig, axs = plt.subplots(3)
+    
+    axs[0].plot(tempos,AccX_MPU) #marker = "o"
+    axs[0].set_title("AccX_MPU", loc = 'left')
 
+    axs[1].plot(tempos,AccY_MPU) #marker = "o"
+    axs[1].set_title("AccY_MPU", loc = 'left')
+
+    axs[2].plot(tempos,AccZ_MPU) #marker = "o"
+    axs[2].set_title("AccZ_MPU", loc = 'left')
+    
+
+elif vel:
+    Vel_MPU_X = Dados.obter_velocidade_geral(AccX_MPU, tempos, 0, len(tempos)-1)
+    Vel_MPU_Y = Dados.obter_velocidade_geral(AccY_MPU, tempos, 0, len(tempos)-1)
+    Vel_MPU_Z = Dados.obter_velocidade_geral(AccZ_MPU, tempos, 0, len(tempos)-1)
+    
+    fig, axs = plt.subplots(3)
+    
+    axs[0].plot(Vel_MPU_X)
+    axs[0].set_title("Vel MPU X ",loc = 'left')
+
+    axs[1].plot(Vel_MPU_Y)
+    axs[1].set_title("Vel MPU Y ",loc = 'left')
+    
+    axs[2].plot(Vel_MPU_Z)
+    axs[2].set_title("Vel MPU Z ",loc = 'left')
+    
+
+elif vel_per_frame:
+    fig, axs = plt.subplots(3)
+    
+    axs[0].plot(medias_velX)
+    axs[0].set_title("Vel MPU Per frame X ",loc = 'left')
+
+    axs[1].plot(medias_velY)
+    axs[1].set_title("Vel MPU Per frame Y ",loc = 'left')
+    
+    axs[2].plot(medias_velZ)
+    axs[2].set_title("Vel MPU Per frame Z ",loc = 'left')
+    
+    
 plt.show()
+
+
+#=====================================================================
+
+#Sepração por arquivos
+
+indexPrimeiroDado = 4
+
+for i in range(indexPrimeiroDado,len(tempos), 1):
+    diffTempos.append(tempos[i] - tempos[i-1])
+    
+inicio = 0
+contadorDeDados = 0
+dadosPorFrame = []
+
+medias_velX = []
+medias_velY = []
+medias_velZ = []
+
+for i in range(1,len(timeFimIniArray),1):
+    arquivo = open(str(pasta) + "/frame" + str(i) + ".txt", "w")
+    print("="*100)
+    print("FRAME: ", i)
+    print('~'*30)
+    
+    soma = 0
+    arquivoDados = []
+    dados = []
+    contadorDeDados = 0
+    
+    accXPerFrame = []
+    accYPerFrame = []
+    accZPerFrame = []
+    
+    for j in range(inicio,len(diffTempos),1):
+        soma += diffTempos[j]
+        
+        if(soma >= timeFimIniArray[i]):
+            Vel_MPU_X = Dados.obter_velocidade_geral(accXPerFrame, tempos[inicio : inicio + contadorDeDados], 0, contadorDeDados)
+            Vel_MPU_Y = Dados.obter_velocidade_geral(accYPerFrame, tempos[inicio : inicio + contadorDeDados], 0, contadorDeDados)
+            Vel_MPU_Z = Dados.obter_velocidade_geral(accZPerFrame, tempos[inicio : inicio + contadorDeDados], 0, contadorDeDados)
+            
+            velMediaX = np.mean(Vel_MPU_X)
+            velMediaY = np.mean(Vel_MPU_Y)
+            velMediaZ = np.mean(Vel_MPU_Z)
+            
+            arquivoDados.append("Vel. Media X: " + str(velMediaX) + "\n")
+            arquivoDados.append("Vel. Media Y: " + str(velMediaY) + "\n")
+            arquivoDados.append("Vel. Media Z: " + str(velMediaZ))
+            
+            arquivo.writelines(arquivoDados)
+            
+            print("Velocidade média X: ", velMediaX)
+            print("Velocidade média Y: ", velMediaY)
+            print("Velocidade média Z: ", velMediaZ)
+            
+            print('~'*30)
+            print("Estão dentro do intervalo de: ", timeFimIniArray[i])
+            
+            medias_velX.append(velMediaX)
+            medias_velY.append(velMediaY)
+            medias_velZ.append(velMediaZ)
+            
+            dadosPorFrame.append(contadorDeDados)
+            
+            accXPerFrame = []
+            accYPerFrame = []
+            accZPerFrame = []
+            
+            break
+
+        indiceAtual = inicio + (indexPrimeiroDado - 1)
+
+        accXPerFrame.append(AccX_MPU[indiceAtual])
+        accYPerFrame.append(AccY_MPU[indiceAtual])
+        accZPerFrame.append(AccZ_MPU[indiceAtual])
+        
+        print("Dados AccX: ", AccX_MPU[indiceAtual])
+        print("Dados AccY: ", AccY_MPU[indiceAtual])
+        print("Dados AccZ: ", AccZ_MPU[indiceAtual])
+
+        dados.append(AccX_MPU[indiceAtual])
+        dados.append(AccY_MPU[indiceAtual])
+        dados.append(AccZ_MPU[indiceAtual])
+        
+        arquivoDados.append("AccX: " + str(AccX_MPU[indiceAtual]) + "\n")
+        arquivoDados.append("AccY: " + str(AccY_MPU[indiceAtual]) + "\n")
+        arquivoDados.append("AccZ: " + str(AccZ_MPU[indiceAtual]) + "\n")
+        arquivoDados.append("\n")
+        
+        contadorDeDados += 1
+        inicio += 1
+        
+        print("DiffTempos: ", diffTempos[j], "Soma: ", soma)
+
+print("Média de dados por frame: ", np.mean(dadosPorFrame))
+    
+for i in range(len(dadosPorFrame)):
+    if(dadosPorFrame[i] < 3):
+        print("O frame de número ", i+1, "Possui apenas ", dadosPorFrame[i], "dados.")
+    
+
 
 
 
